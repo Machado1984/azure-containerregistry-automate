@@ -1,0 +1,70 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Automatizar a criaçao de uma imagem usando o Dockerfile
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Runs a set of commands using the runners shell
+      - name: Valida ficheiro de variaveis de ambiente
+        run: |
+          echo Testar ficheiro config.env
+          # Carrega variáveis do ficheiro config.env
+            if [ -f "config.env" ]; then
+                # Importa para o ambiente atual
+                source config.env
+                cat config.env >> $GITHUB_ENV
+            else
+                echo "Ficheiro config.env não encontrado."
+                exit 1
+            fi
+          echo Testar ficheiro Dockerfile
+          # Carrega variáveis do ficheiro Dockerfile
+            if [ -f "Dockerfile" ]; then
+        
+                echo "ficheiro Dockerfile existe"
+            else
+                echo "Ficheiro Dockerfile não encontrado."
+                exit 1
+            fi
+          echo "Versao = " $VERSAO 
+          
+      # Runs a set of commands using the runners shell
+      - name: Construir a imagem local do Docker
+        run: |
+          echo docker build
+          docker build -t ${{ secrets.ACR_REPO }}/elisangela:${{ env.VERSAO }} .
+          # docker build -t sergio24082026cr.azurecr.io/elisangela:v1 .
+          docker images 
+
+      # Runs a set of commands using the runners shell
+      - name: Login no Azure container Registry
+        run: |
+          echo docker login
+          docker login -u ${{ secrets.ACR_USER }} -p ${{ secrets.ACR_TOKEN }}  ${{ secrets.ACR_REPO }}
+
+      # Runs a set of commands using the runners shell
+      - name: Push no REPO do  Azure Container Registry
+        run: |
+          echo docker push
+          docker push ${{ secrets.ACR_REPO }}/elisangela:${{ env.VERSAO }} .
